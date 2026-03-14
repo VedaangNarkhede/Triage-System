@@ -1,7 +1,7 @@
 """
 Unified Pipeline Orchestrator
-Converts unstructured clinical input (audio / text / image / PDF) into structured clinical notes.
-Pipeline: Input → ASR/OCR → Preprocess → NER → Temporal → Features → Urgency → Summary
+Converts unstructured clinical input (audio / text / image / PDF) into structured clinical summaries.
+Pipeline: Input → ASR/OCR → Preprocess → NER → Temporal → Features → Urgency → Summary (Meditron)
 """
 
 import json
@@ -27,7 +27,7 @@ def run_pipeline(source: str) -> dict:
         source: A file path (audio/image/PDF) or raw text string.
 
     Returns:
-        dict with structured clinical note and all extraction results.
+        dict with clinical summary and structured extraction results.
     """
     start_time = time.time()
 
@@ -79,22 +79,20 @@ def run_pipeline(source: str) -> dict:
     print("[Pipeline] Step 7: Urgency classification...")
     urgency = classify_urgency(features)
 
-    # Step 8: Summary generation (structured clinical note)
-    print("[Pipeline] Step 8: Generating structured clinical note...")
+    # Step 8: Summary generation via Meditron
+    print("[Pipeline] Step 8: Generating clinical summary (Meditron)...")
     summary_result = generate_summary(cleaned, features, urgency)
 
     elapsed = round(time.time() - start_time, 2)
     print(f"[Pipeline] Complete in {elapsed}s")
 
+    # Build clean, compact output
     return {
         "input_type": input_type,
+        "summary": summary_result["summary"],
+        "extracted_info": summary_result["structured_data"],
         "original_text": transcript,
-        "cleaned_text": cleaned,
-        "extracted_entities": ner_result,
-        "temporal_info": temporal_result,
-        "clinical_note": summary_result["clinical_note"],
-        "structured_data": summary_result["structured_data"],
-        "processing_time_seconds": elapsed,
+        "processing_time": f"{elapsed}s",
     }
 
 

@@ -1,8 +1,8 @@
 """
-AI Clinical Note Generator — Unified OCR Runner
+AI Clinical Triage Assistant — Unified Runner
 
 Converts unstructured clinical input (text, audio, image, or PDF) into
-structured clinical notes.
+structured clinical summaries using Ollama's Meditron model.
 
 Usage:
     python ocr_run.py "patient description text"       # text input
@@ -22,65 +22,67 @@ from ocr_processing.pipeline import run_pipeline
 
 
 def _print_readable(result: dict):
-    """Print results in a human-readable format."""
-    sd = result["structured_data"]
+    """Print results in a human-readable, summary-first format."""
+    info = result.get("extracted_info", {})
+    triage = info.get("triage", {})
 
     print(f"\n{'='*65}")
-    print("  STRUCTURED CLINICAL NOTE")
+    print("  AI CLINICAL TRIAGE ASSISTANT")
     print(f"{'='*65}")
 
-    print(f"\n  Input Type    : {result['input_type'].upper()}")
-    print(f"  Processing    : {result['processing_time_seconds']}s")
+    print(f"\n  Input Type : {result['input_type'].upper()}")
+    print(f"  Processing : {result['processing_time']}")
 
+    # --- SUMMARY (prominent) ---
+    print(f"\n{'━'*65}")
+    print("  📋 CLINICAL SUMMARY")
+    print(f"{'━'*65}")
+    summary_text = result.get("summary", "No summary generated.")
+    # Word-wrap the summary for readability
+    for line in summary_text.split("\n"):
+        print(f"  {line.strip()}")
+
+    # --- TRIAGE ---
     print(f"\n{'─'*65}")
-    print("  CHIEF COMPLAINT")
+    print("  🚨 TRIAGE ASSESSMENT")
     print(f"{'─'*65}")
-    print(f"  {sd['chief_complaint']}")
-
-    print(f"\n{'─'*65}")
-    print("  HISTORY OF PRESENT ILLNESS")
-    print(f"{'─'*65}")
-    print(f"  {sd['history_of_present_illness']}")
-
-    print(f"\n{'─'*65}")
-    print("  EXTRACTED SYMPTOMS ({} found)".format(sd['symptom_count']))
-    print(f"{'─'*65}")
-    for i, s in enumerate(sd["symptoms_identified"], 1):
-        print(f"  {i}. {s}")
-
-    if sd.get("affected_body_parts"):
-        print(f"\n{'─'*65}")
-        print("  AFFECTED BODY PARTS")
-        print(f"{'─'*65}")
-        for bp in sd["affected_body_parts"]:
-            print(f"  • {bp}")
-
-    if sd.get("severity") and sd["severity"] != "not specified":
-        print(f"\n  Severity: {sd['severity']}")
-    if sd.get("duration") and sd["duration"] != "not mentioned":
-        print(f"  Duration: {sd['duration']}")
-    if sd.get("onset") and sd["onset"] != "not mentioned":
-        print(f"  Onset: {sd['onset']}")
-
-    if sd.get("patient_concerns"):
-        print(f"\n{'─'*65}")
-        print("  PATIENT'S OWN WORDS (key concerns)")
-        print(f"{'─'*65}")
-        for c in sd["patient_concerns"]:
-            print(f'  → "{c}"')
-
-    print(f"\n{'─'*65}")
-    print("  TRIAGE")
-    print(f"{'─'*65}")
-    print(f"  Level      : {sd['triage_level']}")
-    print(f"  Confidence : {sd['triage_confidence']}")
-    for r in sd.get("triage_reasons", []):
+    print(f"  Level      : {triage.get('level', 'UNKNOWN')}")
+    print(f"  Confidence : {triage.get('confidence', 0)}")
+    for r in triage.get("reasons", []):
         print(f"  Reason     : {r}")
 
-    print(f"\n{'─'*65}")
-    print("  AI CLINICAL NOTE (LLM-generated)")
-    print(f"{'─'*65}")
-    print(f"  {result['clinical_note']}")
+    # --- EXTRACTED INFO (compact) ---
+    symptoms = info.get("symptoms", [])
+    if symptoms:
+        print(f"\n{'─'*65}")
+        print(f"  🔍 EXTRACTED SYMPTOMS ({len(symptoms)})")
+        print(f"{'─'*65}")
+        for i, s in enumerate(symptoms, 1):
+            print(f"  {i}. {s}")
+
+    body_parts = info.get("body_parts", [])
+    if body_parts:
+        print(f"\n  Body Parts : {', '.join(body_parts)}")
+
+    severity = info.get("severity", "not specified")
+    if severity and severity != "not specified":
+        print(f"  Severity   : {severity}")
+
+    duration = info.get("duration", "not mentioned")
+    if duration and duration != "not mentioned":
+        print(f"  Duration   : {duration}")
+
+    onset = info.get("onset", "not mentioned")
+    if onset and onset != "not mentioned":
+        print(f"  Onset      : {onset}")
+
+    concerns = info.get("patient_concerns", [])
+    if concerns:
+        print(f"\n{'─'*65}")
+        print("  💬 PATIENT'S OWN WORDS")
+        print(f"{'─'*65}")
+        for c in concerns:
+            print(f'  → "{c}"')
 
     print(f"\n{'='*65}")
 
@@ -95,9 +97,9 @@ if __name__ == "__main__":
 
     result = run_pipeline(source)
 
-    # Human-readable output
+    # Human-readable summary-first output
     _print_readable(result)
 
-    # Also dump raw JSON
-    print("\n  RAW JSON OUTPUT:")
+    # Compact JSON for frontend consumption
+    print("\n  JSON OUTPUT:")
     print(json.dumps(result, indent=2))
