@@ -1,124 +1,92 @@
 import connectToDatabase from "@/lib/mongodb";
-import Case from "@/models/Case";
+import Patient from "@/models/Patient";
 import Link from "next/link";
+import StatusBadge from "@/components/StatusBadge";
 
 export const dynamic = "force-dynamic";
 
-export default async function DoctorDashboard() {
+export default async function DashboardPage() {
   await connectToDatabase();
-  
-  // Fetch all cases across all patients
-  const cases = await Case.find({}).sort({ created_at: -1 }).lean();
+  const patients = await Patient.find({}).sort({ created_at: -1 }).lean();
 
-  // Sort them loosely by urgency (High > Medium > Low > Unknown)
-  const urgencyWeight = { "High": 3, "Medium": 2, "Low": 1, "Unknown": 0 };
-  
-  const sortedCases = [...cases].sort((a, b) => {
-    const wA = urgencyWeight[a.urgency] ?? 0;
-    const wB = urgencyWeight[b.urgency] ?? 0;
-    return wB - wA; // descending
-  });
+  const urgencyWeight = { Critical: 4, High: 3, Medium: 2, Low: 1, Unknown: 0 };
+  const sorted = [...patients].sort((a, b) => (urgencyWeight[b.urgency] ?? 0) - (urgencyWeight[a.urgency] ?? 0));
 
   return (
-    <div className="min-h-screen bg-bg-primary py-12 px-6">
-      <div className="container mx-auto max-w-6xl">
-        <div className="flex justify-between items-end mb-10 border-b border-border-subtle pb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-text-primary mb-2 tracking-tight">
-              Clinical <span className="text-neon-cyan glow-text-cyan">Triage Dashboard</span>
-            </h1>
-            <p className="text-text-muted text-sm">Review incoming patient cases prioritized by AI-determined urgency.</p>
-          </div>
-          <div className="bg-neon-cyan/10 border border-neon-cyan/20 text-neon-cyan py-2 px-6 rounded-lg shadow font-medium tracking-widest text-sm uppercase">
-            {sortedCases.length} Active Cases
-          </div>
+    <div className="max-w-7xl mx-auto px-6 py-10">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-text-primary">Doctor Dashboard</h1>
+          <p className="text-text-muted text-sm">Manage and review patient cases</p>
         </div>
+        <div className="flex items-center gap-3">
+          <span className="text-text-muted text-sm">{sorted.length} cases</span>
+          <Link href="/submit-case"
+            className="gradient-btn-cyan text-bg-primary font-bold py-2 px-5 rounded-xl text-sm hover:shadow-[0_0_20px_rgba(0,240,255,0.3)] transition-all">
+            + Analyze New Case
+          </Link>
+        </div>
+      </div>
 
-        <div className="gradient-card rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.5)] overflow-hidden border border-border-subtle">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-bg-secondary/80 border-b border-border-subtle text-text-muted text-xs uppercase tracking-wider">
-                  <th className="p-4 font-semibold">Priority</th>
-                  <th className="p-4 font-semibold">IDs & Date</th>
-                  <th className="p-4 font-semibold">Incoming Symptoms</th>
-                  <th className="p-4 font-semibold">AI Extracted Diagnosis</th>
-                  <th className="p-4 font-semibold text-right">Actions</th>
+      <div className="gradient-card rounded-2xl border border-border-subtle overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b border-border-subtle text-text-muted text-xs uppercase tracking-wider">
+                <th className="p-4 font-semibold">Case ID</th>
+                <th className="p-4 font-semibold">Patient</th>
+                <th className="p-4 font-semibold">Age</th>
+                <th className="p-4 font-semibold">Symptoms</th>
+                <th className="p-4 font-semibold">Urgency</th>
+                <th className="p-4 font-semibold">Diagnosis</th>
+                <th className="p-4 font-semibold">Status</th>
+                <th className="p-4 font-semibold text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border-subtle">
+              {sorted.length === 0 ? (
+                <tr>
+                  <td colSpan="8" className="p-12 text-center text-text-muted">
+                    No cases found. <Link href="/submit-case" className="text-neon-cyan hover:underline">Submit a new case</Link>
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-border-subtle">
-                {sortedCases.length === 0 ? (
-                  <tr>
-                    <td colSpan="5" className="p-12 text-center text-text-muted italic bg-bg-primary">
-                      No patient records found in the system.
-                    </td>
-                  </tr>
-                ) : (
-                  sortedCases.map((c) => {
-                    const isHigh = c.urgency === "High";
-                    const isMed = c.urgency === "Medium" || c.urgency === "Moderate";
-                    const badgeColor = isHigh ? "bg-red-500/10 text-red-400 border border-red-500/30" 
-                                     : isMed ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/30" 
-                                     : "bg-green-500/10 text-green-400 border border-green-500/30";
-
-                    // Determine short diagnosis
-                    let mainDiagnosis = "Pending review";
-                    if (c.rag_diagnosis && c.rag_diagnosis.length > 0) {
-                        mainDiagnosis = c.rag_diagnosis[0].disease;
-                    } else if (c.extracted_entities && c.extracted_entities["Symptom/Disease"]) {
-                        const sd = c.extracted_entities["Symptom/Disease"];
-                        mainDiagnosis = Array.isArray(sd) ? sd.slice(0, 2).join(", ") : sd;
-                    }
-
-                    const dateStr = new Date(c.created_at).toLocaleDateString([], { month: 'short', day: '2-digit', year: 'numeric' });
-
-                    return (
-                      <tr key={c._id.toString()} className="hover:bg-bg-card transition duration-150 group">
-                        <td className="p-4 align-top">
-                          <span className={`px-3 py-1 rounded text-[10px] font-bold uppercase tracking-widest block w-max ${badgeColor}`}>
-                            {c.urgency}
-                          </span>
-                        </td>
-                        <td className="p-4 text-sm text-text-secondary align-top">
-                          <div className="flex flex-col gap-0.5">
-                            <span className="text-white"><span className="text-text-muted">PT:</span> #{c.patientId}</span>
-                            <span><span className="text-text-muted">CS:</span> <span className="text-neon-cyan">#{c.caseId}</span></span>
-                            <span className="text-[10px] text-text-muted mt-1">{dateStr}</span>
-                          </div>
-                        </td>
-                        <td className="p-4 text-sm text-text-primary align-top max-w-[250px]">
-                           <div className="line-clamp-2 leading-relaxed">
-                            {c.input_record}
-                           </div>
-                        </td>
-                        <td className="p-4 text-sm text-text-secondary align-top max-w-[200px]">
-                          <div className="truncate">
-                            {mainDiagnosis}
-                          </div>
-                        </td>
-                        <td className="p-4 text-right align-top">
-                          <div className="flex flex-col items-end gap-2">
-                             <Link 
-                                href={`/doctor/case/${c._id.toString()}`}
-                                className="text-neon-cyan hover:text-white font-medium text-sm hover:underline flex items-center gap-1"
-                             >
-                                 View Case
-                             </Link>
-                             <Link 
-                                href={`/doctor/case/${c._id.toString()}`}
-                                className="text-neon-purple hover:text-white font-medium text-sm hover:underline flex items-center gap-1"
-                             >
-                                 View Diagnosis
-                             </Link>
-                          </div>
-                        </td>
-                      </tr>
-                    )
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
+              ) : (
+                sorted.map((p) => {
+                  const id = p._id.toString();
+                  const symptoms = p.extracted_entities?.["Symptom/Disease"] || p.structured_data?.symptoms || [];
+                  const topDiag = p.rag_diagnosis?.[0]?.disease || "—";
+                  
+                  return (
+                    <tr key={id} className="hover:bg-bg-card-hover transition-colors">
+                      <td className="p-4 text-text-muted text-xs font-mono">{id.slice(-6).toUpperCase()}</td>
+                      <td className="p-4 text-text-primary font-medium text-sm">{p.name}</td>
+                      <td className="p-4 text-text-secondary text-sm">{p.age || "—"}</td>
+                      <td className="p-4 text-text-secondary text-sm max-w-[200px] truncate">
+                        {Array.isArray(symptoms) ? symptoms.slice(0, 3).join(", ") : "—"}
+                      </td>
+                      <td className="p-4"><StatusBadge level={p.urgency} /></td>
+                      <td className="p-4 text-text-secondary text-sm max-w-[150px] truncate">{topDiag}</td>
+                      <td className="p-4">
+                        <span className={`text-xs font-medium capitalize ${
+                          p.status === "diagnosed" ? "text-neon-green" 
+                          : p.status === "analyzed" ? "text-neon-cyan" 
+                          : "text-neon-yellow"
+                        }`}>{p.status || "analyzed"}</span>
+                      </td>
+                      <td className="p-4 text-right">
+                        <div className="flex gap-2 justify-end">
+                          <Link href={`/case/${id}`} className="text-neon-cyan text-xs hover:underline">Summary</Link>
+                          <Link href={`/case/${id}/diagnosis`} className="text-neon-purple text-xs hover:underline">Diagnosis</Link>
+                          <Link href={`/case/${id}/evidence`} className="text-text-muted text-xs hover:underline">Evidence</Link>
+                          <Link href={`/case/${id}/emergency`} className="text-neon-red text-xs hover:underline">Emergency</Link>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

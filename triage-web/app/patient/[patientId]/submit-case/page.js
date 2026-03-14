@@ -1,16 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useParams } from "next/navigation";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 
-export default function SubmitCase() {
+const INPUT_TABS = [
+  { key: "text", label: "Text", icon: "📝" },
+  { key: "audio", label: "Audio", icon: "🎙️" },
+  { key: "image", label: "Image", icon: "🖼️" },
+  { key: "pdf", label: "PDF", icon: "📄" },
+];
+
+export default function SubmitCasePage() {
   const router = useRouter();
-  const params = useParams();
-  const patientId = params.patientId;
-
-  const [formData, setFormData] = useState({ symptoms: "", duration: "", additional_notes: "" });
+  const [inputType, setInputType] = useState("text");
+  const [symptoms, setSymptoms] = useState("");
   const [file, setFile] = useState(null);
+  const [age, setAge] = useState("");
+  const [gender, setGender] = useState("");
+  const [knownConditions, setKnownConditions] = useState("");
+  const [additionalNotes, setAdditionalNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -19,114 +27,184 @@ export default function SubmitCase() {
     setLoading(true);
     setError(null);
 
-    if (!formData.symptoms && !file) {
-      setError("Please provide either symptom description or upload a clinical file.");
+    if (inputType === "text" && !symptoms.trim()) {
+      setError("Please describe the patient's symptoms.");
+      setLoading(false);
+      return;
+    }
+    if (inputType !== "text" && (!file || file.size === 0)) {
+      setError("Please upload a file.");
       setLoading(false);
       return;
     }
 
     try {
-      const submitData = new FormData();
-      submitData.append("patientId", patientId);
-      submitData.append("symptoms", formData.symptoms);
-      submitData.append("duration", formData.duration);
-      submitData.append("additional_notes", formData.additional_notes);
-      
-      if (file) {
-        submitData.append("file", file);
+      const fd = new FormData();
+      fd.append("name", `Patient-${Date.now().toString(36).toUpperCase()}`);
+      fd.append("age", age);
+      fd.append("gender", gender);
+      fd.append("contact", "");
+      fd.append("known_conditions", knownConditions);
+      fd.append("additional_notes", additionalNotes);
+      fd.append("input_type", inputType);
+      if (symptoms) fd.append("symptoms", symptoms);
+      if (file) fd.append("file", file);
+
+      const res = await fetch("/api/triage", { method: "POST", body: fd });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Submission failed");
       }
-
-      const res = await fetch("/api/case", {
-        method: "POST",
-        body: submitData,
-      });
-
-      if (!res.ok) throw new Error("Failed to submit and process case");
-
-      // Redirect to past diagnosis page to view history
-      router.push(`/patient/${patientId}/past-diagnosis`);
+      const data = await res.json();
+      router.push(`/processing?caseId=${data.patientId}`);
     } catch (err) {
       setError(err.message);
       setLoading(false);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-bg-primary py-12 px-6">
-      <div className="container mx-auto max-w-2xl">
-        <div className="mb-6">
-           <Link href={`/patient/${patientId}`} className="text-neon-cyan hover:underline text-sm font-medium flex items-center gap-2">
-            &larr; Back to Portal
-           </Link>
-        </div>
+  const fileAccept = {
+    audio: "audio/*",
+    image: "image/*",
+    pdf: "application/pdf",
+  };
 
-        <div className="gradient-card p-8 rounded-2xl shadow-xl border border-border-subtle relative overflow-hidden">
-          {loading && (
-            <div className="absolute inset-0 bg-bg-primary/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center">
-               <div className="w-16 h-16 border-4 border-neon-cyan/20 border-t-neon-cyan rounded-full animate-spin mb-4"></div>
-               <p className="text-neon-cyan font-bold animate-pulse">Analyzing Case via AI Pipeline...</p>
+  return (
+    <div className="max-w-3xl mx-auto px-6 py-12">
+      <div className="mb-8 text-center">
+        <h1 className="text-3xl font-bold text-text-primary mb-2">Submit Patient Case</h1>
+        <p className="text-text-muted text-sm">Upload clinical data for AI-powered triage analysis</p>
+      </div>
+
+      <div className="gradient-card rounded-2xl border border-border-subtle p-8">
+        {error && (
+          <div className="mb-6 px-4 py-3 rounded-lg bg-neon-red/10 border border-neon-red/30 text-neon-red text-sm">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Input Type Tabs */}
+          <div>
+            <label className="block text-text-secondary text-xs font-semibold uppercase tracking-wider mb-3">Input Type</label>
+            <div className="flex gap-2">
+              {INPUT_TABS.map((tab) => (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => { setInputType(tab.key); setFile(null); }}
+                  className={`
+                    flex-1 py-2.5 rounded-lg text-sm font-medium border transition-all duration-200
+                    ${inputType === tab.key
+                      ? "border-neon-cyan/50 bg-neon-cyan/10 text-neon-cyan"
+                      : "border-border-subtle bg-bg-card text-text-muted hover:text-text-secondary hover:border-text-muted/30"}
+                  `}
+                >
+                  <span className="mr-1">{tab.icon}</span> {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Conditional Input */}
+          {inputType === "text" ? (
+            <div>
+              <label className="block text-text-secondary text-xs font-semibold uppercase tracking-wider mb-2">Symptoms / Clinical History</label>
+              <textarea
+                rows={5}
+                value={symptoms}
+                onChange={(e) => setSymptoms(e.target.value)}
+                placeholder="Describe the patient's symptoms, medical history, and presenting complaints..."
+                className="w-full bg-bg-primary border border-border-subtle rounded-xl p-4 text-text-primary text-sm placeholder-text-muted/50 focus:outline-none focus:border-neon-cyan/50 focus:ring-1 focus:ring-neon-cyan/20 transition-all resize-none"
+              />
+            </div>
+          ) : (
+            <div>
+              <label className="block text-text-secondary text-xs font-semibold uppercase tracking-wider mb-2">Upload {inputType.charAt(0).toUpperCase() + inputType.slice(1)} File</label>
+              <div className="border-2 border-dashed border-border-subtle rounded-xl p-8 text-center hover:border-neon-cyan/30 transition-colors">
+                <input
+                  type="file"
+                  accept={fileAccept[inputType]}
+                  onChange={(e) => setFile(e.target.files[0])}
+                  className="hidden"
+                  id="file-upload"
+                />
+                <label htmlFor="file-upload" className="cursor-pointer">
+                  <div className="text-3xl mb-2">{INPUT_TABS.find(t => t.key === inputType)?.icon}</div>
+                  <p className="text-text-secondary text-sm">{file ? file.name : "Click to select file"}</p>
+                  <p className="text-text-muted text-xs mt-1">Supports {inputType} files</p>
+                </label>
+              </div>
             </div>
           )}
 
-          <h2 className="text-2xl font-bold mb-6 text-text-primary border-b border-border-subtle pb-4">Submit New Medical Case</h2>
-          
-          {error && <div className="bg-red-500/10 border border-red-500/50 text-red-500 px-4 py-3 rounded mb-6 text-sm">{error}</div>}
-
-          <form onSubmit={handleSubmit} className="space-y-6 relative z-10">
+          {/* Patient Details Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-2">Symptoms Description</label>
-              <textarea
-                required={!file}
-                rows={4}
-                className="w-full p-4 bg-bg-secondary border border-border-subtle rounded-xl text-text-primary focus:ring-1 focus:ring-neon-cyan outline-none transition-all placeholder:text-text-muted"
-                placeholder="E.g., I have been having severe chest pain since yesterday..."
-                value={formData.symptoms}
-                onChange={(e) => setFormData({ ...formData, symptoms: e.target.value })}
-              ></textarea>
+              <label className="block text-text-secondary text-xs font-semibold uppercase tracking-wider mb-2">Age</label>
+              <input
+                type="number"
+                value={age}
+                onChange={(e) => setAge(e.target.value)}
+                placeholder="e.g. 45"
+                className="w-full bg-bg-primary border border-border-subtle rounded-xl p-3 text-text-primary text-sm placeholder-text-muted/50 focus:outline-none focus:border-neon-cyan/50 transition-all"
+              />
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-               <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-2">Duration of symptoms</label>
-                  <input
-                    type="text"
-                    className="w-full p-3 bg-bg-secondary border border-border-subtle rounded-xl text-text-primary focus:ring-1 focus:ring-neon-cyan outline-none transition-all placeholder:text-text-muted text-sm"
-                    value={formData.duration}
-                    onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                    placeholder="E.g. 3 days, 2 weeks..."
-                  />
-               </div>
-               <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-2">Upload Clinical File (Audio/Image/PDF)</label>
-                  <input
-                    type="file"
-                    accept="image/*,audio/*,application/pdf"
-                    className="w-full text-sm text-text-secondary file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-neon-cyan/10 file:text-neon-cyan hover:file:bg-neon-cyan/20 transition-all bg-bg-secondary border border-border-subtle rounded-xl cursor-pointer py-1 px-1"
-                    onChange={(e) => setFile(e.target.files[0])}
-                  />
-               </div>
-            </div>
-
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-2">Additional Notes (Optional)</label>
-              <textarea
-                rows={2}
-                className="w-full p-3 bg-bg-secondary border border-border-subtle rounded-xl text-text-primary focus:ring-1 focus:ring-neon-cyan outline-none transition-all placeholder:text-text-muted text-sm"
-                placeholder="Any known conditions or allergies?"
-                value={formData.additional_notes}
-                onChange={(e) => setFormData({ ...formData, additional_notes: e.target.value })}
-              ></textarea>
+              <label className="block text-text-secondary text-xs font-semibold uppercase tracking-wider mb-2">Gender</label>
+              <select
+                value={gender}
+                onChange={(e) => setGender(e.target.value)}
+                className="w-full bg-bg-primary border border-border-subtle rounded-xl p-3 text-text-primary text-sm focus:outline-none focus:border-neon-cyan/50 transition-all"
+              >
+                <option value="">Select...</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
             </div>
+          </div>
 
+          <div>
+            <label className="block text-text-secondary text-xs font-semibold uppercase tracking-wider mb-2">Known Conditions</label>
+            <input
+              type="text"
+              value={knownConditions}
+              onChange={(e) => setKnownConditions(e.target.value)}
+              placeholder="e.g. Diabetes, Hypertension"
+              className="w-full bg-bg-primary border border-border-subtle rounded-xl p-3 text-text-primary text-sm placeholder-text-muted/50 focus:outline-none focus:border-neon-cyan/50 transition-all"
+            />
+          </div>
+
+          <div>
+            <label className="block text-text-secondary text-xs font-semibold uppercase tracking-wider mb-2">Additional Notes</label>
+            <textarea
+              rows={2}
+              value={additionalNotes}
+              onChange={(e) => setAdditionalNotes(e.target.value)}
+              placeholder="Any additional information..."
+              className="w-full bg-bg-primary border border-border-subtle rounded-xl p-3 text-text-primary text-sm placeholder-text-muted/50 focus:outline-none focus:border-neon-cyan/50 transition-all resize-none"
+            />
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 pt-2">
             <button
               type="submit"
               disabled={loading}
-              className="w-full gradient-btn-cyan text-bg-primary font-bold py-3 px-4 rounded-xl hover:shadow-[0_0_20px_rgba(0,240,255,0.4)] transition-all uppercase tracking-wide text-sm mt-4 disabled:opacity-50"
+              className="flex-1 gradient-btn-cyan text-bg-primary font-bold py-3 rounded-xl hover:shadow-[0_0_25px_rgba(0,240,255,0.3)] transition-all duration-300 text-sm uppercase tracking-wider disabled:opacity-50"
             >
-              Submit Case for AI Extraction
+              {loading ? "Analyzing..." : "Start Analysis"}
             </button>
-          </form>
-        </div>
+            <button
+              type="button"
+              onClick={() => router.push("/")}
+              className="px-6 py-3 border border-border-subtle text-text-muted rounded-xl hover:border-text-muted/50 hover:text-text-secondary transition-all text-sm font-medium"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
