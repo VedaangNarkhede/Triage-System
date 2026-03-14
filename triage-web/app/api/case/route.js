@@ -1,17 +1,18 @@
 import { NextResponse } from "next/server";
 import connectToDatabase from "@/lib/mongodb";
-import Patient from "@/models/Patient";
+import Case from "@/models/Case";
 
 export async function POST(req) {
   try {
     const formData = await req.formData();
-    const name = formData.get("name") || `Patient-${Date.now().toString(36)}`;
-    const age = formData.get("age");
-    const gender = formData.get("gender") || "";
-    const contact = formData.get("contact") || "";
-    const knownConditions = formData.get("known_conditions") || "";
+    const patientId = formData.get("patientId");
+    
+    if (!patientId) {
+        return NextResponse.json({ error: "Patient ID is required" }, { status: 400 });
+    }
+
     const additionalNotes = formData.get("additional_notes") || "";
-    const inputType = formData.get("input_type") || "text";
+    const duration = formData.get("duration") || "";
     const symptoms = formData.get("symptoms");
     const file = formData.get("file");
 
@@ -34,10 +35,8 @@ export async function POST(req) {
 
       if (fastApiRes.ok) {
         triageResult = await fastApiRes.json();
-        console.log("FastAPI Response received:", JSON.stringify(triageResult).substring(0, 200));
       } else {
         const errText = await fastApiRes.text();
-        console.error("FastAPI Error:", errText);
         return NextResponse.json({ error: "FastAPI Backend Error: " + errText }, { status: 502 });
       }
     } catch (e) {
@@ -45,11 +44,10 @@ export async function POST(req) {
       return NextResponse.json({ error: "Failed to connect to Python backend." }, { status: 503 });
     }
 
-    // Extract urgency with multiple fallback strategies
+    // Extract urgency with fallback strategies
     let urgency = "Unknown";
     const clinicalNote = triageResult?.clinical_note || "";
     
-    // Strategy 1: structured data urgency_level
     if (triageResult?.structured_data?.urgency_level) {
       const raw = triageResult.structured_data.urgency_level.toLowerCase();
       if (raw.includes("high") || raw.includes("critical")) urgency = "High";
@@ -57,7 +55,6 @@ export async function POST(req) {
       else if (raw.includes("low")) urgency = "Low";
     }
     
-    // Strategy 2: regex on clinical note
     if (urgency === "Unknown") {
       const match = clinicalNote.match(/urgency\s*(?:level)?[:\s]*(\w+)/i);
       if (match) {
@@ -69,15 +66,17 @@ export async function POST(req) {
     }
 
     await connectToDatabase();
+    
+    // Auto-generate Case ID
+    const count = await Case.countDocuments();
+    const newCaseId = count + 1;
 
-    const newPatient = new Patient({
-      name,
-      age: age ? parseInt(age) : null,
-      gender,
-      contact,
-      known_conditions: knownConditions,
+    const newCase = new Case({
+      caseId: newCaseId,
+      patientId: parseInt(patientId),
       additional_notes: additionalNotes,
-      input_type: inputType,
+      duration: duration,
+      input_type: file ? "file upload" : "text",
       input_record: symptoms || (file ? file.name : "file upload"),
       status: "analyzed",
       urgency,
@@ -88,9 +87,9 @@ export async function POST(req) {
       rag_diagnosis: [],
     });
 
-    const savedPatient = await newPatient.save();
+    const savedCase = await newCase.save();
 
-    return NextResponse.json({ success: true, patientId: savedPatient._id }, { status: 201 });
+    return NextResponse.json({ success: true, caseId: savedCase.caseId, patientId }, { status: 201 });
   } catch (error) {
     console.error("API Route Error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

@@ -1,94 +1,124 @@
 import connectToDatabase from "@/lib/mongodb";
-import Patient from "@/models/Patient";
+import Case from "@/models/Case";
 import Link from "next/link";
 
-// Force dynamic rendering since we are fetching live db
 export const dynamic = "force-dynamic";
 
 export default async function DoctorDashboard() {
   await connectToDatabase();
   
-  // Fetch all patients and sort by creation date (newest first)
-  const patients = await Patient.find({}).sort({ created_at: -1 }).lean();
+  // Fetch all cases across all patients
+  const cases = await Case.find({}).sort({ created_at: -1 }).lean();
 
   // Sort them loosely by urgency (High > Medium > Low > Unknown)
   const urgencyWeight = { "High": 3, "Medium": 2, "Low": 1, "Unknown": 0 };
   
-  const sortedPatients = [...patients].sort((a, b) => {
+  const sortedCases = [...cases].sort((a, b) => {
     const wA = urgencyWeight[a.urgency] ?? 0;
     const wB = urgencyWeight[b.urgency] ?? 0;
     return wB - wA; // descending
   });
 
   return (
-    <div className="container mx-auto px-6 py-12">
-      <div className="flex justify-between items-center mb-10">
-        <h1 className="text-3xl font-bold text-brand-dark">Clinical Triage Dashboard</h1>
-        <div className="bg-brand-primary text-white py-2 px-6 rounded shadow font-medium">
-          {sortedPatients.length} Active Cases
+    <div className="min-h-screen bg-bg-primary py-12 px-6">
+      <div className="container mx-auto max-w-6xl">
+        <div className="flex justify-between items-end mb-10 border-b border-border-subtle pb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-text-primary mb-2 tracking-tight">
+              Clinical <span className="text-neon-cyan glow-text-cyan">Triage Dashboard</span>
+            </h1>
+            <p className="text-text-muted text-sm">Review incoming patient cases prioritized by AI-determined urgency.</p>
+          </div>
+          <div className="bg-neon-cyan/10 border border-neon-cyan/20 text-neon-cyan py-2 px-6 rounded-lg shadow font-medium tracking-widest text-sm uppercase">
+            {sortedCases.length} Active Cases
+          </div>
         </div>
-      </div>
 
-      <div className="bg-white rounded-lg shadow-xl overflow-hidden border border-gray-100">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-brand-dark text-white text-sm uppercase tracking-wider">
-                <th className="p-4 font-semibold">Priority</th>
-                <th className="p-4 font-semibold">Patient Name</th>
-                <th className="p-4 font-semibold">Age/Contact</th>
-                <th className="p-4 font-semibold">Key Symptoms / Presenting Issue</th>
-                <th className="p-4 font-semibold text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {sortedPatients.length === 0 ? (
-                <tr>
-                  <td colSpan="5" className="p-8 text-center text-gray-500 italic">
-                    No patient records found. Patients added via the intake form will appear here.
-                  </td>
+        <div className="gradient-card rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.5)] overflow-hidden border border-border-subtle">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-bg-secondary/80 border-b border-border-subtle text-text-muted text-xs uppercase tracking-wider">
+                  <th className="p-4 font-semibold">Priority</th>
+                  <th className="p-4 font-semibold">IDs & Date</th>
+                  <th className="p-4 font-semibold">Incoming Symptoms</th>
+                  <th className="p-4 font-semibold">AI Extracted Diagnosis</th>
+                  <th className="p-4 font-semibold text-right">Actions</th>
                 </tr>
-              ) : (
-                sortedPatients.map((p) => {
-                  const isHigh = p.urgency === "High";
-                  const isMed = p.urgency === "Medium";
-                  const badgeColor = isHigh ? "bg-red-100 text-red-800 border-red-300" 
-                                   : isMed ? "bg-yellow-100 text-yellow-800 border-yellow-300" 
-                                   : "bg-green-100 text-green-800 border-green-300";
+              </thead>
+              <tbody className="divide-y divide-border-subtle">
+                {sortedCases.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="p-12 text-center text-text-muted italic bg-bg-primary">
+                      No patient records found in the system.
+                    </td>
+                  </tr>
+                ) : (
+                  sortedCases.map((c) => {
+                    const isHigh = c.urgency === "High";
+                    const isMed = c.urgency === "Medium" || c.urgency === "Moderate";
+                    const badgeColor = isHigh ? "bg-red-500/10 text-red-400 border border-red-500/30" 
+                                     : isMed ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/30" 
+                                     : "bg-green-500/10 text-green-400 border border-green-500/30";
 
-                  // Extract just symptoms if possible
-                  const symptomList = p.extracted_entities?.["Symptom/Disease"] || [];
-                  const displaySymptoms = Array.isArray(symptomList) ? symptomList.slice(0, 3).join(", ") : "View details";
+                    // Determine short diagnosis
+                    let mainDiagnosis = "Pending review";
+                    if (c.rag_diagnosis && c.rag_diagnosis.length > 0) {
+                        mainDiagnosis = c.rag_diagnosis[0].disease;
+                    } else if (c.extracted_entities && c.extracted_entities["Symptom/Disease"]) {
+                        const sd = c.extracted_entities["Symptom/Disease"];
+                        mainDiagnosis = Array.isArray(sd) ? sd.slice(0, 2).join(", ") : sd;
+                    }
 
-                  return (
-                    <tr key={p._id.toString()} className="hover:bg-brand-light transition duration-150">
-                      <td className="p-4">
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold border uppercase tracking-wide ${badgeColor}`}>
-                          {p.urgency}
-                        </span>
-                      </td>
-                      <td className="p-4 font-medium text-gray-900">{p.name}</td>
-                      <td className="p-4 text-sm text-gray-600">
-                        {p.age ? `${p.age} yrs` : "N/A"} <br/>
-                        <span className="text-xs text-gray-400">{p.contact}</span>
-                      </td>
-                      <td className="p-4 text-sm text-gray-700 truncate max-w-xs">
-                        {displaySymptoms || p.input_record.substring(0, 60) + "..."}
-                      </td>
-                      <td className="p-4 text-right">
-                        <Link 
-                          href={`/doctor/patient/${p._id.toString()}`}
-                          className="text-brand-primary hover:text-brand-secondary font-medium hover:underline flex items-center justify-end gap-1"
-                        >
-                          Review Case &rarr;
-                        </Link>
-                      </td>
-                    </tr>
-                  )
-                })
-              )}
-            </tbody>
-          </table>
+                    const dateStr = new Date(c.created_at).toLocaleDateString([], { month: 'short', day: '2-digit', year: 'numeric' });
+
+                    return (
+                      <tr key={c._id.toString()} className="hover:bg-bg-card transition duration-150 group">
+                        <td className="p-4 align-top">
+                          <span className={`px-3 py-1 rounded text-[10px] font-bold uppercase tracking-widest block w-max ${badgeColor}`}>
+                            {c.urgency}
+                          </span>
+                        </td>
+                        <td className="p-4 text-sm text-text-secondary align-top">
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-white"><span className="text-text-muted">PT:</span> #{c.patientId}</span>
+                            <span><span className="text-text-muted">CS:</span> <span className="text-neon-cyan">#{c.caseId}</span></span>
+                            <span className="text-[10px] text-text-muted mt-1">{dateStr}</span>
+                          </div>
+                        </td>
+                        <td className="p-4 text-sm text-text-primary align-top max-w-[250px]">
+                           <div className="line-clamp-2 leading-relaxed">
+                            {c.input_record}
+                           </div>
+                        </td>
+                        <td className="p-4 text-sm text-text-secondary align-top max-w-[200px]">
+                          <div className="truncate">
+                            {mainDiagnosis}
+                          </div>
+                        </td>
+                        <td className="p-4 text-right align-top">
+                          <div className="flex flex-col items-end gap-2">
+                             <Link 
+                                href={`/doctor/case/${c._id.toString()}`}
+                                className="text-neon-cyan hover:text-white font-medium text-sm hover:underline flex items-center gap-1"
+                             >
+                                 View Case
+                             </Link>
+                             <Link 
+                                href={`/doctor/case/${c._id.toString()}`}
+                                className="text-neon-purple hover:text-white font-medium text-sm hover:underline flex items-center gap-1"
+                             >
+                                 View Diagnosis
+                             </Link>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
