@@ -2,6 +2,7 @@ import connectToDatabase from "@/lib/mongodb";
 import Patient from "@/models/Patient";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import DiagnoseButton from "./DiagnoseButton";
 
 export default async function PatientDetail({ params }) {
   await connectToDatabase();
@@ -52,6 +53,35 @@ export default async function PatientDetail({ params }) {
               {patient.clinical_note}
             </div>
           </section>
+
+          {/* RAG2 AI Diagnosis */}
+          {patient.rag_diagnosis && Array.isArray(patient.rag_diagnosis) && patient.rag_diagnosis.length > 0 ? (
+            <section className="bg-blue-50/50 p-6 rounded-lg border border-blue-100">
+              <h2 className="text-xl font-bold text-brand-dark mb-4 border-b border-blue-200 pb-2 flex items-center gap-2">
+                <span className="text-blue-600">🤖</span> AI Diagnostic Suggestions
+              </h2>
+              <div className="space-y-6">
+                {patient.rag_diagnosis.map((diag, i) => (
+                  <div key={i} className="bg-white p-5 rounded border shadow-sm">
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">{i + 1}. {diag.disease}</h3>
+                    <p className="text-gray-700 text-sm mb-4 leading-relaxed">{diag.reasoning}</p>
+                    {diag.precautions && diag.precautions.length > 0 && (
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-800 mb-1">Recommended Precautions:</h4>
+                        <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                          {diag.precautions.map((p, j) => (
+                            <li key={j} className="capitalize">{p}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          ) : (
+            <DiagnoseButton patientId={patient._id.toString()} />
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <section>

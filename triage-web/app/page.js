@@ -1,74 +1,82 @@
 import Link from "next/link";
-import { FaHeartbeat, FaClinicMedical, FaStethoscope, FaBriefcaseMedical } from "react-icons/fa";
+import PipelineViz from "@/components/PipelineViz";
+
+const FEATURES = [
+  { icon: "📡", title: "Multimodal Input", desc: "Accept text, audio, images, and PDF documents as clinical input." },
+  { icon: "🧠", title: "Clinical NLP", desc: "Extract medical entities, symptoms, and temporal information automatically." },
+  { icon: "📝", title: "AI Clinical Summary", desc: "Generate structured clinical notes via LLM-powered summarization." },
+  { icon: "🔬", title: "Evidence Based Diagnosis", desc: "RAG-powered differential diagnosis with medical knowledge retrieval." },
+  { icon: "🚨", title: "Emergency Detection", desc: "Instant urgency classification to prioritize critical patients." },
+];
 
 export default function Home() {
   return (
     <div className="w-full">
       {/* Hero Section */}
-      <section className="bg-brand-primary text-white py-24 px-6 md:px-12 relative overflow-hidden">
-        <div className="container mx-auto max-w-6xl relative z-10 flex flex-col md:flex-row items-center">
-          <div className="md:w-1/2 mb-10 md:mb-0">
-            <h1 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
-              WE PROVIDE BEST<br />HEALTHCARE
-            </h1>
-            <p className="text-brand-accent mb-8 max-w-md">
-              Our AI-powered intelligent triage assistant helps convert unstructured patient information into structured summaries to improve workflow efficiency.
-            </p>
-            <Link 
-              href="/patient/new" 
-              className="bg-white text-brand-primary font-bold py-3 px-8 rounded shadow-lg hover:bg-gray-100 transition-colors inline-block"
-            >
-              Start Triage
-            </Link>
-          </div>
-          {/* Decorative Circle Background */}
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white opacity-10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
-        </div>
+      <section className="gradient-hero py-28 px-6 relative overflow-hidden">
+        {/* Decorative orbs */}
+        <div className="absolute top-20 right-20 w-72 h-72 bg-neon-cyan/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-10 left-10 w-96 h-96 bg-neon-purple/5 rounded-full blur-3xl pointer-events-none" />
         
-        {/* Curvy Bottom Division */}
-        <div className="absolute bottom-0 left-0 right-0 w-full overflow-hidden leading-none z-0 translate-y-[1px]">
-          <svg className="w-full h-16 md:h-24" viewBox="0 0 1200 120" preserveAspectRatio="none">
-            <path d="M0,0 C300,100 900,100 1200,0 L1200,120 L0,120 Z" className="fill-brand-light"></path>
-          </svg>
-        </div>
-      </section>
-
-      {/* Departments Section */}
-      <section className="py-20 px-6 bg-brand-light text-center">
-        <div className="container mx-auto max-w-5xl">
-          <h2 className="text-3xl font-bold text-brand-dark mb-4">OUR DEPARTMENTS</h2>
-          <p className="text-gray-500 mb-12 max-w-2xl mx-auto">
-            Organizing critical information across various healthcare disciplines quickly and accurately.
-          </p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <DepartmentCard icon={<FaHeartbeat />} title="CARDIOLOGY" />
-            <DepartmentCard icon={<FaClinicMedical />} title="DIAGNOSIS" />
-            <DepartmentCard icon={<FaStethoscope />} title="SURGERY" />
-            <DepartmentCard icon={<FaBriefcaseMedical />} title="FIRST AID" />
+        <div className="max-w-6xl mx-auto relative z-10 text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-neon-cyan/30 bg-neon-cyan/5 text-neon-cyan text-xs font-medium mb-8">
+            <span className="w-2 h-2 rounded-full bg-neon-cyan animate-pulse" />
+            AI-Powered Clinical Triage
           </div>
+          
+          <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
+            <span className="text-text-primary">AI Clinical</span><br />
+            <span className="text-neon-cyan glow-text-cyan">Triage Assistant</span>
+          </h1>
+          
+          <p className="text-text-secondary text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed">
+            Transform unstructured patient data into structured clinical insights. 
+            Multimodal input processing, evidence-based diagnosis, and emergency detection — all powered by AI.
+          </p>
 
-          <div className="mt-12">
-            <Link href="/doctor/dashboard" className="bg-brand-primary text-white py-2 px-8 rounded font-medium hover:bg-brand-secondary transition">
-              View All Cases
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link href="/submit-case"
+              className="gradient-btn-cyan text-bg-primary font-bold py-3 px-8 rounded-xl hover:shadow-[0_0_30px_rgba(0,240,255,0.3)] transition-all duration-300 text-sm uppercase tracking-wider"
+            >
+              Upload Patient Case
+            </Link>
+            <Link href="/dashboard"
+              className="border border-neon-purple/40 text-neon-purple font-bold py-3 px-8 rounded-xl hover:bg-neon-purple/10 hover:shadow-[0_0_20px_rgba(168,85,247,0.2)] transition-all duration-300 text-sm uppercase tracking-wider"
+            >
+              Open Dashboard
             </Link>
           </div>
         </div>
       </section>
-    </div>
-  );
-}
 
-function DepartmentCard({ icon, title }) {
-  return (
-    <div className="flex flex-col items-center group cursor-default">
-      <div className="w-20 h-20 rounded-full border-2 border-brand-accent flex items-center justify-center text-3xl text-brand-primary mb-4 group-hover:bg-brand-primary group-hover:text-white transition-colors">
-        {icon}
-      </div>
-      <h3 className="font-bold text-brand-dark mb-2">{title}</h3>
-      <p className="text-xs text-gray-500 px-4">
-        AI-assisted structured summaries for enhanced prioritization.
-      </p>
+      {/* Feature Cards */}
+      <section className="py-20 px-6 bg-bg-primary">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl font-bold text-text-primary mb-3">Intelligent Pipeline</h2>
+            <p className="text-text-muted max-w-xl mx-auto">End-to-end AI processing from raw patient input to actionable clinical decisions.</p>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            {FEATURES.map((f, i) => (
+              <div key={i} className="gradient-card rounded-2xl border border-border-subtle p-5 hover:border-neon-cyan/30 transition-all duration-300 group text-center">
+                <div className="text-3xl mb-3">{f.icon}</div>
+                <h3 className="text-text-primary font-semibold text-sm mb-2">{f.title}</h3>
+                <p className="text-text-muted text-xs leading-relaxed">{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Pipeline Visualization */}
+      <section className="py-16 px-6 bg-bg-secondary border-t border-border-subtle">
+        <div className="max-w-6xl mx-auto text-center">
+          <h2 className="text-2xl font-bold text-text-primary mb-2">System Pipeline</h2>
+          <p className="text-text-muted mb-10 text-sm">How patient data flows through the AI engine</p>
+          <PipelineViz activeStep={-1} />
+        </div>
+      </section>
     </div>
   );
 }
