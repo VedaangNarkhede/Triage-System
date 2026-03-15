@@ -24,7 +24,7 @@ export default async function ClinicalSummary({ params }) {
   return (
     <div className="max-w-5xl mx-auto px-6 py-10">
       {/* Back */}
-      <Link href="/dashboard" className="text-text-muted hover:text-neon-cyan text-sm mb-6 inline-flex items-center gap-1 transition-colors">
+      <Link href="/doctor/dashboard" className="text-text-muted hover:text-neon-cyan text-sm mb-6 inline-flex items-center gap-1 transition-colors">
         ← Back to Dashboard
       </Link>
 
@@ -117,10 +117,6 @@ export default async function ClinicalSummary({ params }) {
         <Link href={`/case/${patient._id}/emergency`}
           className="border border-neon-red/40 text-neon-red font-medium py-2.5 px-5 rounded-xl text-sm hover:bg-neon-red/10 transition-all">
           Check Emergency Level
-        </Link>
-        <Link href="/dashboard"
-          className="border border-border-subtle text-text-muted font-medium py-2.5 px-5 rounded-xl text-sm hover:text-text-secondary hover:border-text-muted/50 transition-all">
-          Back to Dashboard
         </Link>
       </div>
     </div>

@@ -13,9 +13,11 @@ const URGENCY_CONFIG = {
   Unknown:  { color: "text-text-muted", bg: "bg-text-muted/10", border: "border-text-muted/40", ring: "", label: "UNKNOWN" },
 };
 
-export default async function EmergencyPage({ params }) {
+export default async function EmergencyPage({ params, searchParams }) {
   await connectToDatabase();
   const { caseId } = await params;
+  const sp = await searchParams;
+  const isPatient = sp?.source === "patient";
 
   let patient;
   try {
@@ -35,9 +37,15 @@ export default async function EmergencyPage({ params }) {
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-10">
-      <Link href={`/case/${caseId}`} className="text-text-muted hover:text-neon-cyan text-sm mb-6 inline-flex items-center gap-1 transition-colors">
-        ← Back to Summary
-      </Link>
+      {isPatient ? (
+        <Link href={`/patient/${patient.patientId}/past-diagnosis`} className="text-text-muted hover:text-neon-cyan text-sm mb-6 inline-flex items-center gap-1 transition-colors">
+          ← Back to Past Diagnosis
+        </Link>
+      ) : (
+        <Link href={`/case/${caseId}`} className="text-text-muted hover:text-neon-cyan text-sm mb-6 inline-flex items-center gap-1 transition-colors">
+          ← Back to Summary
+        </Link>
+      )}
 
       <div className="mb-8 text-center">
         <h1 className="text-2xl font-bold text-text-primary mb-2">Emergency Detection</h1>
@@ -72,25 +80,23 @@ export default async function EmergencyPage({ params }) {
       {!hasDiagnosis && (
         <div className="gradient-card rounded-2xl border border-border-subtle p-8 text-center mb-8">
           <p className="text-text-muted text-sm mb-2">Run AI Diagnosis to get detailed precautions and actions.</p>
-          <Link href={`/case/${caseId}/diagnosis`} className="text-neon-cyan hover:underline text-sm">
+          <Link href={`/case/${caseId}/diagnosis${isPatient ? "?source=patient" : ""}`} className="text-neon-cyan hover:underline text-sm">
             Go to Diagnosis →
           </Link>
         </div>
       )}
 
-      <div className="flex flex-wrap gap-3 justify-center">
-        <Link href={`/case/${caseId}/diagnosis`}
+      <div className="flex justify-between items-center flex-wrap gap-3">
+        <Link href={`/case/${caseId}/diagnosis${isPatient ? "?source=patient" : ""}`}
           className="gradient-btn-cyan text-bg-primary font-bold py-2.5 px-5 rounded-xl text-sm transition-all">
           View Diagnosis
         </Link>
-        <Link href={`/case/${caseId}`}
-          className="border border-border-subtle text-text-muted font-medium py-2.5 px-5 rounded-xl text-sm transition-all">
-          Back to Summary
-        </Link>
-        <Link href="/dashboard"
-          className="border border-border-subtle text-text-muted font-medium py-2.5 px-5 rounded-xl text-sm transition-all">
-          Dashboard
-        </Link>
+        {!isPatient && (
+          <Link href="/doctor/dashboard"
+            className="border border-border-subtle text-text-muted font-medium py-2.5 px-5 rounded-xl text-sm transition-all">
+            Dashboard
+          </Link>
+        )}
       </div>
     </div>
   );

@@ -6,9 +6,11 @@ import DiagnoseButton from "./DiagnoseButton";
 
 export const dynamic = "force-dynamic";
 
-export default async function DiagnosisPage({ params }) {
+export default async function DiagnosisPage({ params, searchParams }) {
   await connectToDatabase();
   const { caseId } = await params;
+  const sp = await searchParams;
+  const isPatient = sp?.source === "patient";
 
   let patient;
   try {
@@ -22,9 +24,15 @@ export default async function DiagnosisPage({ params }) {
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10">
-      <Link href={`/case/${caseId}`} className="text-text-muted hover:text-neon-cyan text-sm mb-6 inline-flex items-center gap-1 transition-colors">
-        ← Back to Summary
-      </Link>
+      {isPatient ? (
+        <Link href={`/patient/${patient.patientId}/past-diagnosis`} className="text-text-muted hover:text-neon-cyan text-sm mb-6 inline-flex items-center gap-1 transition-colors">
+          ← Back to Past Diagnosis
+        </Link>
+      ) : (
+        <Link href={`/case/${caseId}`} className="text-text-muted hover:text-neon-cyan text-sm mb-6 inline-flex items-center gap-1 transition-colors">
+          ← Back to Summary
+        </Link>
+      )}
 
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-text-primary mb-2">Differential Diagnosis</h1>
@@ -94,23 +102,27 @@ export default async function DiagnosisPage({ params }) {
       )}
 
       {/* Navigation */}
-      <div className="flex flex-wrap gap-3 mt-6">
-        <Link href={`/case/${caseId}/evidence`}
-          className="border border-neon-purple/40 text-neon-purple font-medium py-2.5 px-5 rounded-xl text-sm hover:bg-neon-purple/10 transition-all">
-          View Medical Evidence
-        </Link>
-        <Link href={`/case/${caseId}/emergency`}
-          className="border border-neon-red/40 text-neon-red font-medium py-2.5 px-5 rounded-xl text-sm hover:bg-neon-red/10 transition-all">
-          View Emergency Risk
-        </Link>
-        <Link href={`/case/${caseId}`}
-          className="border border-border-subtle text-text-muted font-medium py-2.5 px-5 rounded-xl text-sm hover:text-text-secondary transition-all">
-          Back to Summary
-        </Link>
-        <Link href="/dashboard"
-          className="border border-border-subtle text-text-muted font-medium py-2.5 px-5 rounded-xl text-sm hover:text-text-secondary transition-all">
-          Dashboard
-        </Link>
+      <div className="flex justify-between items-center flex-wrap gap-3 mt-6">
+        {/* Left Side */}
+          <div className="flex gap-3 flex-wrap">
+            <Link href={`/case/${caseId}/evidence${isPatient ? "?source=patient" : ""}`}
+              className="border border-neon-purple/40 text-neon-purple font-medium py-2.5 px-5 rounded-xl text-sm hover:bg-neon-purple/10 transition-all">
+              View Medical Evidence
+            </Link>
+
+            <Link href={`/case/${caseId}/emergency${isPatient ? "?source=patient" : ""}`}
+              className="border border-neon-red/40 text-neon-red font-medium py-2.5 px-5 rounded-xl text-sm hover:bg-neon-red/10 transition-all">
+              View Emergency Risk
+            </Link>
+          </div>
+
+          {/* Right button */}
+          {!isPatient && (
+            <Link href="/doctor/dashboard"
+              className="border border-border-subtle text-text-muted font-medium py-2.5 px-5 rounded-xl text-sm hover:text-text-secondary transition-all">
+              Dashboard
+            </Link>
+          )}
       </div>
     </div>
   );

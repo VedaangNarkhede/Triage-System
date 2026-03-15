@@ -101,18 +101,17 @@ def extract_patient_symptoms(summary_output) -> tuple:
         return symptoms, context
 
     if isinstance(summary_output, dict):
-        # Handle full pipeline output
         if "structured_data" in summary_output:
             sd = summary_output["structured_data"]
-            symptoms = sd.get("symptoms_identified", [])
+            symptoms = sd.get("symptoms", []) or sd.get("symptoms_identified", [])
             context = {
                 "duration": sd.get("duration", ""),
                 "severity": sd.get("severity", ""),
-                "chief_complaint": sd.get("chief_complaint", ""),
+                "chief_complaint": sd.get("chief_complaint", "") or ", ".join(sd.get("patient_concerns", [])),
                 "onset": sd.get("onset", ""),
             }
-            if "extracted_info" in summary_output:
-                concerns = summary_output["extracted_info"].get("patient_concerns", [])
+            if "extracted_entities" in summary_output:
+                concerns = summary_output["extracted_entities"].get("Symptom/Disease", [])
                 if concerns:
                     context["patient_words"] = " ".join(concerns)
         else:

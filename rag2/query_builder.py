@@ -52,14 +52,17 @@ def build_query(summary_output) -> str:
         if "structured_data" in summary_output:
             sd = summary_output["structured_data"]
 
-            # Extract symptoms
-            symptoms = sd.get("symptoms_identified", [])
+            # Extract symptoms (key depends on pipeline version)
+            symptoms = sd.get("symptoms", []) or sd.get("symptoms_identified", [])
             if symptoms:
                 parts.append(f"symptoms: {' '.join(symptoms)}")
 
-            # Chief complaint
+            # Patient concerns / chief complaint
+            concerns = sd.get("patient_concerns", [])
             cc = sd.get("chief_complaint", "")
-            if cc and cc.lower() not in ("not specified", "none", ""):
+            if concerns:
+                parts.append(f"concerns: {' '.join(concerns)}")
+            elif cc and cc.lower() not in ("not specified", "none", ""):
                 parts.append(f"complaint: {cc}")
 
             # Duration
@@ -72,9 +75,9 @@ def build_query(summary_output) -> str:
             if severity and severity.lower() not in ("not specified", "none", ""):
                 parts.append(f"severity: {severity}")
 
-            # Fall back to clinical note if no symptoms found
+            # Fall back to clinical note / summary if no symptoms found
             if not parts:
-                note = summary_output.get("clinical_note", "")
+                note = summary_output.get("clinical_note", "") or summary_output.get("summary", "")
                 if note:
                     return note.strip()
 

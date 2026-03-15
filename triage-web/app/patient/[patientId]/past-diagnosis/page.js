@@ -64,7 +64,7 @@ export default async function PatientPastDiagnoses({ params }) {
                       <td className="p-4"><StatusBadge level={p.urgency} /></td>
                       <td className="p-4 text-right">
                         <div className="flex gap-2 justify-end">
-                          <Link href={`/case/${id}/diagnosis`} className="text-neon-purple text-xs hover:underline">Diagnosis Details</Link>
+                          <Link href={`/case/${id}/diagnosis?source=patient`} className="text-neon-purple text-xs hover:underline">Diagnosis Details</Link>
                         </div>
                       </td>
                     </tr>

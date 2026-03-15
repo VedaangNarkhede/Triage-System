@@ -8,11 +8,16 @@ import json
 import os
 import tempfile
 import shutil
+import io
+import contextlib
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 
 from backend.pipeline import run_pipeline
+from rag2.rag_pipeline import run_rag_pipeline, initialize_rag
+from pydantic import BaseModel
+from loguru import logger
 
 app = FastAPI(
     title="AI Triage & Decision Support API",
@@ -40,6 +45,11 @@ def root():
     }
 
 
+class DiagnoseRequest(BaseModel):
+    summary: str
+    structured_data: dict
+
+
 @app.post("/analyze")
 async def analyze(
     text: Optional[str] = Form(None),
@@ -59,20 +69,81 @@ async def analyze(
             detail="Either 'text' or 'file' must be provided."
         )
 
-    if file is not None:
-        # Save uploaded audio to temp file
-        suffix = os.path.splitext(file.filename)[1] if file.filename else ".wav"
-        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
-        try:
-            shutil.copyfileobj(file.file, tmp)
-            tmp.close()
-            result = run_pipeline(tmp.name)
-        finally:
-            os.unlink(tmp.name)
-    else:
-        result = run_pipeline(text)
+    with contextlib.redirect_stdout(io.StringIO()):
+        if file is not None:
+            # Save uploaded file to temp file, preserving extension for input_handler
+            original_filename = getattr(file, "filename", "") or ""
+            _, ext = os.path.splitext(original_filename)
+            suffix = ext if ext else ".wav" # fallback for audio mostly
+            tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+            try:
+                shutil.copyfileobj(file.file, tmp)
+                tmp.close()
+                result = run_pipeline(tmp.name)
+            finally:
+                os.unlink(tmp.name)
+        else:
+            result = run_pipeline(text)
 
     return result
+
+
+@app.post("/diagnose")
+async def diagnose_patient(req: DiagnoseRequest):
+    """
+    On-demand AI diagnosis using RAG2.
+    Accepts the summarized output and structured data from the initial analysis.
+    """
+    with contextlib.redirect_stdout(io.StringIO()):
+        try:
+            logger.remove()
+        except:
+            pass
+        initialize_rag()
+        
+        # Reconstruct the expected pipeline output dictionary for RAG query builder
+        pipeline_output = {
+            "summary": req.summary,
+            "structured_data": req.structured_data
+        }
+        
+        rag_result = run_rag_pipeline(pipeline_output)
+
+    return rag_result
+
+
+@app.post("/ocr")
+async def ocr_image(file: UploadFile = File(...)):
+    """
+    Perform OCR on an uploaded image file.
+    Returns the extracted text from the image.
+    """
+    if file.content_type and not file.content_type.startswith("image/"):
+        raise HTTPException(
+            status_code=400,
+            detail="Uploaded file must be an image (png, jpg, etc.)."
+        )
+
+    original_filename = getattr(file, "filename", "") or ""
+    _, ext = os.path.splitext(original_filename)
+    suffix = ext if ext else ".png"
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+    try:
+        shutil.copyfileobj(file.file, tmp)
+        tmp.close()
+
+        from ocr_processing.ocr_module import ocr_from_image
+        with contextlib.redirect_stdout(io.StringIO()):
+            extracted_text = ocr_from_image(tmp.name)
+
+        return {"text": extracted_text}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"OCR processing failed: {e}")
+    finally:
+        try:
+            os.unlink(tmp.name)
+        except OSError:
+            pass
 
 
 if __name__ == "__main__":

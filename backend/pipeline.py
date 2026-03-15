@@ -12,6 +12,7 @@ from backend.input_handler import handle_input
 from backend.asr_module import transcribe_audio
 from backend.preprocess import clean_text
 from backend.ner_module import extract_entities
+from ocr_processing.ocr_module import ocr_from_image, ocr_from_pdf
 from backend.temporal_module import extract_temporal
 from backend.feature_builder import build_features
 from backend.urgency_module import classify_urgency
@@ -36,13 +37,19 @@ def run_pipeline(source: str) -> dict:
     input_type = input_result["type"]
     content = input_result["content"]
 
-    # Step 2: ASR (if audio)
+    # Step 2: ASR or OCR
     if input_type == "audio":
         print("[Pipeline] Step 2: Audio-to-Text (ASR)...")
         asr_result = transcribe_audio(content)
         transcript = asr_result["transcript"]
+    elif input_type == "image":
+        print("[Pipeline] Step 2: Image-to-Text (OCR)...")
+        transcript = ocr_from_image(content)
+    elif input_type == "pdf":
+        print("[Pipeline] Step 2: PDF-to-Text (OCR)...")
+        transcript = ocr_from_pdf(content)
     else:
-        print("[Pipeline] Step 2: Skipping ASR (text input)...")
+        print("[Pipeline] Step 2: Skipping ASR/OCR (text input)...")
         transcript = content
 
     # Step 3: Text cleaning
@@ -79,7 +86,7 @@ def run_pipeline(source: str) -> dict:
         "cleaned_text": cleaned,
         "extracted_entities": ner_result,
         "temporal_info": temporal_result,
-        "clinical_note": summary_result["clinical_note"],
+        "clinical_note": summary_result["summary"],
         "structured_data": summary_result["structured_data"],
         "processing_time_seconds": elapsed
     }

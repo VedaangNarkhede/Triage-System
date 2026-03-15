@@ -58,7 +58,7 @@ export async function POST(req) {
       const fastApiRes = await fetch("http://127.0.0.1:8000/analyze", {
         method: "POST",
         body: fastApiFormData,
-        signal: AbortSignal.timeout(10000) // 10s timeout
+        signal: AbortSignal.timeout(120000) // 120s timeout for audio/image/pdf processing
       });
 
       if (fastApiRes.ok) {

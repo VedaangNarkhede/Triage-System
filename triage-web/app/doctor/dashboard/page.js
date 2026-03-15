@@ -2,6 +2,7 @@ import connectToDatabase from "@/lib/mongodb";
 import Case from "@/models/Case";
 import Link from "next/link";
 import StatusBadge from "@/components/StatusBadge";
+import UpdateDiagnosisButton from "@/components/UpdateDiagnosisButton";
 
 export const dynamic = "force-dynamic";
 
@@ -21,10 +22,6 @@ export default async function DoctorDashboardPage() {
         </div>
         <div className="flex items-center gap-3">
           <span className="text-text-muted text-sm mr-2">{sorted.length} active cases</span>
-          <Link href="/doctor"
-            className="border border-border-subtle text-text-muted font-bold py-2 px-5 rounded-xl text-sm hover:text-text-secondary transition-all">
-            Back to Portal
-          </Link>
         </div>
       </div>
 
@@ -41,13 +38,14 @@ export default async function DoctorDashboardPage() {
                 <th className="p-4 font-semibold">Urgency</th>
                 <th className="p-4 font-semibold">Diagnosis</th>
                 <th className="p-4 font-semibold">Date</th>
+                <th className="p-4 font-semibold">Update</th>
                 <th className="p-4 font-semibold text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border-subtle">
               {sorted.length === 0 ? (
                 <tr>
-                  <td colSpan="9" className="p-12 text-center text-text-muted">
+                  <td colSpan="10" className="p-12 text-center text-text-muted">
                     No cases available.
                   </td>
                 </tr>
@@ -59,7 +57,7 @@ export default async function DoctorDashboardPage() {
                   const date = p.created_at ? new Date(p.created_at).toLocaleDateString("en-IN", {
                     day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit"
                   }) : "—";
-                  
+
                   return (
                     <tr key={id} className="hover:bg-bg-card-hover transition-colors">
                       <td className="p-4 text-text-primary font-bold text-xs">{p.patientId || "—"}</td>
@@ -72,6 +70,9 @@ export default async function DoctorDashboardPage() {
                       <td className="p-4"><StatusBadge level={p.urgency} /></td>
                       <td className="p-4 text-text-secondary text-sm max-w-[150px] truncate">{topDiag}</td>
                       <td className="p-4 text-text-secondary text-xs">{date}</td>
+                      <td className="p-4">
+                        <UpdateDiagnosisButton caseId={id} patientName={p.name} />
+                      </td>
                       <td className="p-4 text-right">
                         <div className="flex gap-2 justify-end">
                           <Link href={`/case/${id}`} className="text-neon-cyan text-xs hover:underline">View Case</Link>
