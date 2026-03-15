@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 
 const INPUT_TABS = [
   { key: "text", label: "Text", icon: "📝" },
@@ -10,13 +10,15 @@ const INPUT_TABS = [
   { key: "pdf", label: "PDF", icon: "📄" },
 ];
 
-export default function SubmitCasePage() {
+export default function PatientSubmitCasePage() {
   const router = useRouter();
+  const params = useParams();
+  const patientId = params.patientId;
+
   const [inputType, setInputType] = useState("text");
   const [symptoms, setSymptoms] = useState("");
   const [file, setFile] = useState(null);
-  const [age, setAge] = useState("");
-  const [gender, setGender] = useState("");
+  
   const [knownConditions, setKnownConditions] = useState("");
   const [additionalNotes, setAdditionalNotes] = useState("");
   const [loading, setLoading] = useState(false);
@@ -28,7 +30,7 @@ export default function SubmitCasePage() {
     setError(null);
 
     if (inputType === "text" && !symptoms.trim()) {
-      setError("Please describe the patient's symptoms.");
+      setError("Please describe your symptoms.");
       setLoading(false);
       return;
     }
@@ -40,10 +42,7 @@ export default function SubmitCasePage() {
 
     try {
       const fd = new FormData();
-      fd.append("name", `Patient-${Date.now().toString(36).toUpperCase()}`);
-      fd.append("age", age);
-      fd.append("gender", gender);
-      fd.append("contact", "");
+      fd.append("patientId", patientId);
       fd.append("known_conditions", knownConditions);
       fd.append("additional_notes", additionalNotes);
       fd.append("input_type", inputType);
@@ -114,7 +113,7 @@ export default function SubmitCasePage() {
                 rows={5}
                 value={symptoms}
                 onChange={(e) => setSymptoms(e.target.value)}
-                placeholder="Describe the patient's symptoms, medical history, and presenting complaints..."
+                placeholder="Describe your symptoms, medical history, and presenting complaints..."
                 className="w-full bg-bg-primary border border-border-subtle rounded-xl p-4 text-text-primary text-sm placeholder-text-muted/50 focus:outline-none focus:border-neon-cyan/50 focus:ring-1 focus:ring-neon-cyan/20 transition-all resize-none"
               />
             </div>
@@ -137,33 +136,6 @@ export default function SubmitCasePage() {
               </div>
             </div>
           )}
-
-          {/* Patient Details Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-text-secondary text-xs font-semibold uppercase tracking-wider mb-2">Age</label>
-              <input
-                type="number"
-                value={age}
-                onChange={(e) => setAge(e.target.value)}
-                placeholder="e.g. 45"
-                className="w-full bg-bg-primary border border-border-subtle rounded-xl p-3 text-text-primary text-sm placeholder-text-muted/50 focus:outline-none focus:border-neon-cyan/50 transition-all"
-              />
-            </div>
-            <div>
-              <label className="block text-text-secondary text-xs font-semibold uppercase tracking-wider mb-2">Gender</label>
-              <select
-                value={gender}
-                onChange={(e) => setGender(e.target.value)}
-                className="w-full bg-bg-primary border border-border-subtle rounded-xl p-3 text-text-primary text-sm focus:outline-none focus:border-neon-cyan/50 transition-all"
-              >
-                <option value="">Select...</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-          </div>
 
           <div>
             <label className="block text-text-secondary text-xs font-semibold uppercase tracking-wider mb-2">Known Conditions</label>
@@ -198,7 +170,7 @@ export default function SubmitCasePage() {
             </button>
             <button
               type="button"
-              onClick={() => router.push("/")}
+              onClick={() => router.push(`/patient/${patientId}`)}
               className="px-6 py-3 border border-border-subtle text-text-muted rounded-xl hover:border-text-muted/50 hover:text-text-secondary transition-all text-sm font-medium"
             >
               Cancel

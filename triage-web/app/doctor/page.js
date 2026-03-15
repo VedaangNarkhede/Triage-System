@@ -2,35 +2,24 @@ import Link from "next/link";
 
 export default function DoctorPortal() {
   return (
-    <div className="min-h-screen bg-bg-primary flex flex-col items-center justify-center p-6 relative overflow-hidden">
-        {/* Glow Effects */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-neon-cyan/5 rounded-full blur-[100px] pointer-events-none" />
+    <div className="max-w-4xl mx-auto px-6 py-12">
+      <div className="mb-10 text-center">
+        <h1 className="text-3xl font-bold text-text-primary mb-2">Doctor <span className="text-neon-cyan">Portal</span></h1>
+        <p className="text-text-muted text-sm">Central hub for clinical oversight and diagnosis management.</p>
+      </div>
 
-        <div className="max-w-3xl w-full text-center z-10">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-neon-cyan/30 bg-neon-cyan/5 text-neon-cyan text-xs font-medium mb-8">
-                <span className="w-2 h-2 rounded-full bg-neon-cyan animate-pulse" />
-                Doctor Authentication Active
-            </div>
-            
-            <h1 className="text-5xl font-bold text-text-primary mb-6 tracking-tight">
-                Welcome to the <br /> <span className="text-neon-cyan glow-text-cyan">Doctor Portal</span>
-            </h1>
-            
-            <p className="text-text-muted text-lg mb-12 max-w-xl mx-auto leading-relaxed">
-                Access the centralized clinical dashboard to review AI-triaged patient cases. Cases are automatically prioritized by urgency to optimize attention.
-            </p>
-            
-            <Link href="/doctor/dashboard"
-                className="inline-flex items-center justify-center gap-3 gradient-btn-cyan text-bg-primary font-bold py-4 px-10 rounded-xl hover:shadow-[0_0_30px_rgba(0,240,255,0.4)] transition-all uppercase tracking-widest text-sm"
-            >
-                View Patient Diagnosis Dashboard
-                <span className="text-lg">→</span>
-            </Link>
-
-            <div className="mt-12 text-sm text-text-secondary">
-               <Link href="/" className="hover:text-neon-cyan transition-colors underline underline-offset-4">Return to Portal Selection</Link>
-            </div>
-        </div>
+      <div className="bg-bg-secondary rounded-2xl border border-border-subtle p-10 hover:border-neon-cyan/50 transition-all group max-w-2xl mx-auto text-center">
+        <div className="text-5xl mb-6">🩺</div>
+        <h2 className="text-2xl font-bold text-text-primary mb-4">Patient Diagnosis Dashboard</h2>
+        <p className="text-text-secondary text-base mb-10 max-w-md mx-auto">
+          Access the real-time queue of all patient cases, review clinical notes, and manage urgency levels across the system.
+        </p>
+        <Link href="/doctor/dashboard"
+          className="inline-block gradient-btn-cyan text-bg-primary font-bold py-4 px-10 rounded-xl hover:shadow-[0_0_20px_rgba(0,240,255,0.3)] transition-all uppercase tracking-wider text-sm shadow-md"
+        >
+          View Case Dashboard
+        </Link>
+      </div>
     </div>
   );
 }

@@ -1,72 +1,77 @@
+import Link from "next/link";
 import connectToDatabase from "@/lib/mongodb";
 import Patient from "@/models/Patient";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
-export default async function PatientPortal({ params }) {
-  await connectToDatabase();
-  const { patientId } = await params;
+export const dynamic = "force-dynamic";
 
+export default async function PatientDashboard({ params }) {
+  const unwrappedParams = await params;
+  const { patientId } = unwrappedParams;
+
+  await connectToDatabase();
+  
   const patient = await Patient.findOne({ patientId: parseInt(patientId) }).lean();
   
-  if (!patient) return notFound();
+  if (!patient) {
+    notFound();
+  }
 
   return (
-    <div className="min-h-screen bg-bg-primary py-16 px-6 relative">
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-6 flex justify-between items-center">
-            <Link href="/" className="text-text-muted hover:text-neon-purple transition-colors text-sm font-medium flex items-center gap-2">
-            &larr; Log Out
-            </Link>
-        </div>
+    <div className="max-w-4xl mx-auto px-6 py-12">
+      <div className="mb-10 text-center">
+        <h1 className="text-3xl font-bold text-text-primary mb-2">Patient <span className="text-neon-cyan">Portal</span></h1>
+        <p className="text-text-muted text-sm">Welcome back, {patient.name}</p>
+      </div>
 
-        {/* Patient Info Header */}
-        <div className="gradient-card border border-border-subtle rounded-2xl p-8 mb-10 shadow-lg relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-neon-purple/5 rounded-full blur-[80px] pointer-events-none"></div>
-          
-          <div className="flex flex-col md:flex-row md:items-center justify-between z-10 relative gap-6">
-            <div>
-              <p className="text-neon-purple text-sm font-bold tracking-widest uppercase mb-1">Patient Profile</p>
-              <h1 className="text-4xl font-bold text-text-primary mb-4">{patient.name}</h1>
-              
-              <div className="flex flex-wrap gap-4 text-sm text-text-secondary">
-                <span className="flex items-center gap-2 bg-bg-secondary px-3 py-1.5 rounded border border-border-subtle">
-                  <span className="text-text-muted">ID:</span> <span className="font-mono font-bold text-white">{patient.patientId}</span>
-                </span>
-                <span className="flex items-center gap-2 bg-bg-secondary px-3 py-1.5 rounded border border-border-subtle">
-                  <span className="text-text-muted">Age:</span> <span className="text-white">{patient.age || "N/A"}</span>
-                </span>
-                <span className="flex items-center gap-2 bg-bg-secondary px-3 py-1.5 rounded border border-border-subtle">
-                  <span className="text-text-muted">Gender:</span> <span className="text-white">{patient.gender || "Not specified"}</span>
-                </span>
-              </div>
-            </div>
+      <div className="gradient-card rounded-2xl border border-border-subtle p-8 mb-8 shadow-lg">
+        <h2 className="text-xl font-bold text-text-primary mb-6 border-b border-border-subtle pb-4">Demographics</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+          <div>
+            <span className="block text-text-secondary text-xs uppercase tracking-wider mb-1">Patient ID</span>
+            <span className="font-mono text-text-primary text-lg">{patient.patientId}</span>
+          </div>
+          <div>
+            <span className="block text-text-secondary text-xs uppercase tracking-wider mb-1">Name</span>
+            <span className="text-text-primary font-medium text-lg">{patient.name}</span>
+          </div>
+          <div>
+            <span className="block text-text-secondary text-xs uppercase tracking-wider mb-1">Age</span>
+            <span className="text-text-primary text-lg">{patient.age || "N/A"}</span>
+          </div>
+          <div>
+            <span className="block text-text-secondary text-xs uppercase tracking-wider mb-1">Gender</span>
+            <span className="text-text-primary text-lg">{patient.gender || "N/A"}</span>
           </div>
         </div>
+      </div>
 
-        {/* Action Options */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Link href={`/patient/${patient.patientId}/submit-case`} className="group">
-            <div className="h-full bg-bg-secondary border border-border-subtle hover:border-neon-cyan/50 p-8 rounded-2xl transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,240,255,0.1)] hover:-translate-y-1">
-              <div className="w-14 h-14 rounded-full bg-neon-cyan/10 flex items-center justify-center mb-6 text-2xl group-hover:scale-110 transition-transform">
-                📋
-              </div>
-              <h3 className="text-xl font-bold text-text-primary mb-2 group-hover:text-neon-cyan transition-colors">Submit New Case</h3>
-              <p className="text-text-muted text-sm">Upload symptoms, voice recordings, or medical documents for AI-powered triage.</p>
-            </div>
-          </Link>
-
-          <Link href={`/patient/${patient.patientId}/past-diagnosis`} className="group">
-            <div className="h-full bg-bg-secondary border border-border-subtle hover:border-neon-purple/50 p-8 rounded-2xl transition-all duration-300 hover:shadow-[0_0_30px_rgba(168,85,247,0.1)] hover:-translate-y-1">
-              <div className="w-14 h-14 rounded-full bg-neon-purple/10 flex items-center justify-center mb-6 text-2xl group-hover:scale-110 transition-transform">
-                🕰️
-              </div>
-              <h3 className="text-xl font-bold text-text-primary mb-2 group-hover:text-neon-purple transition-colors">View Past Diagnoses</h3>
-              <p className="text-text-muted text-sm">Access your secure history of previously submitted cases, doctor reviews, and urgency reports.</p>
-            </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Submit Case Card */}
+        <div className="bg-bg-secondary rounded-2xl border border-border-subtle p-8 hover:border-neon-cyan/50 transition-all group flex flex-col justify-between">
+          <div>
+            <div className="text-3xl mb-4">🏥</div>
+            <h3 className="text-xl font-bold text-text-primary mb-2">Submit New Case</h3>
+            <p className="text-text-muted text-sm mb-6">Upload clinical data, describe symptoms, or attach medical files for AI triage analysis.</p>
+          </div>
+          <Link href={`/patient/${patientId}/submit-case`}
+            className="w-full text-center gradient-btn-cyan text-bg-primary font-bold py-3 rounded-xl hover:shadow-[0_0_20px_rgba(0,240,255,0.3)] transition-all uppercase tracking-wider text-sm">
+            Submit Case
           </Link>
         </div>
 
+        {/* View Past Diagnoses Card */}
+        <div className="bg-bg-secondary rounded-2xl border border-border-subtle p-8 hover:border-neon-purple/50 transition-all group flex flex-col justify-between">
+          <div>
+            <div className="text-3xl mb-4">🩺</div>
+            <h3 className="text-xl font-bold text-text-primary mb-2">Diagnosis History</h3>
+            <p className="text-text-muted text-sm mb-6">Review your past diagnoses, AI clinical summaries, and case details securely.</p>
+          </div>
+          <Link href={`/patient/${patientId}/past-diagnosis`}
+            className="w-full text-center border-2 border-neon-purple text-neon-purple font-bold py-3 rounded-xl hover:bg-neon-purple/10 transition-all uppercase tracking-wider text-sm">
+            View Past Diagnoses
+          </Link>
+        </div>
       </div>
     </div>
   );

@@ -2,15 +2,19 @@ import connectToDatabase from "@/lib/mongodb";
 import Case from "@/models/Case";
 import Patient from "@/models/Patient";
 import Link from "next/link";
+import StatusBadge from "@/components/StatusBadge";
 import { notFound } from "next/navigation";
 
-export default async function DoctorCaseDetail({ params }) {
-  await connectToDatabase();
-  const { caseId } = await params;
+export const dynamic = "force-dynamic";
+
+export default async function DoctorCaseViewPage({ params }) {
+  const unwrappedParams = await params;
+  const { caseId } = unwrappedParams;
+  let caseRecord = null;
+  let patientRecord = null;
   
-  let caseRecord;
-  let patientRecord;
   try {
+    await connectToDatabase();
     caseRecord = await Case.findById(caseId).lean();
     if (caseRecord) {
         patientRecord = await Patient.findOne({ patientId: caseRecord.patientId }).lean();

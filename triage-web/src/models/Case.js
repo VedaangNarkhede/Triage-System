@@ -1,24 +1,30 @@
 import mongoose from "mongoose";
 
 const CaseSchema = new mongoose.Schema({
-  caseId: { type: Number, required: true, unique: true },
-  patientId: { type: Number, required: true, ref: 'Patient' }, // referencing the integer patientId
+  // Demographic identifiers denormalized
+  patientId: { type: Number, index: true },
+  name: { type: String },
+  age: { type: Number },
+  gender: { type: String },
   
   // Input Data
+  known_conditions: { type: String, default: "" },
+  additional_notes: { type: String, default: "" },
+  input_type: { type: String, enum: ["text", "audio", "image", "pdf"], default: "text" },
   input_record: { type: String, required: true },
-  input_type: { type: String, default: "text" },
-  additional_notes: { type: String },
-  duration: { type: String },
   
-  status: { type: String, default: "analyzed" },
+  // Pipeline status
+  status: { type: String, enum: ["processing", "analyzed", "diagnosed"], default: "processing" },
   
-  // Triage output
-  urgency: { type: String, enum: ["High", "Medium", "Low", "Unknown"], default: "Unknown" },
+  // Triage results
+  urgency: { type: String, enum: ["High", "Medium", "Low", "Critical", "Unknown"], default: "Unknown" },
   clinical_note: { type: String },
   extracted_entities: { type: Object },
   temporal_info: { type: Object },
   structured_data: { type: Object },
-  rag_diagnosis: { type: Array, default: [] },
+  
+  // RAG2 Output
+  rag_diagnosis: { type: Object },
   
   created_at: { type: Date, default: Date.now },
 });

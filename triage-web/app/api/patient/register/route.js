@@ -23,6 +23,8 @@ export async function POST(req) {
       age: age ? parseInt(age) : null,
       gender: gender || "",
       contact: contact || "",
+      input_record: "Registration Only",
+      status: "registered",
     });
 
     await newPatient.save();
