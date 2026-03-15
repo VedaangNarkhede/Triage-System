@@ -32,8 +32,8 @@ export default function Navbar() {
                 href={link.href}
                 className={`
                   px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200
-                  ${isActive
-                    ? "bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30"
+                  ${isActive 
+                    ? "bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30" 
                     : "text-text-secondary hover:text-neon-cyan hover:bg-neon-cyan/5 border border-transparent"}
                 `}
               >

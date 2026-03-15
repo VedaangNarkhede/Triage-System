@@ -1,5 +1,5 @@
 import connectToDatabase from "@/lib/mongodb";
-import Patient from "@/models/Patient";
+import Case from "@/models/Case";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import StatusBadge from "@/components/StatusBadge";
@@ -12,17 +12,22 @@ export default async function ClinicalSummary({ params }) {
 
   let patient;
   try {
-    patient = await Patient.findById(caseId).lean();
+    patient = await Case.findById(caseId).lean();
   } catch (e) {
     return notFound();
   }
   if (!patient) return notFound();
 
-  const symptoms = patient.extracted_entities?.["Symptom/Disease"] ||
-    patient.structured_data?.symptoms || [];
+  const symptoms = patient.extracted_entities?.["Symptom/Disease"] || 
+                   patient.structured_data?.symptoms || [];
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10">
+      {/* Back */}
+      <Link href="/dashboard" className="text-text-muted hover:text-neon-cyan text-sm mb-6 inline-flex items-center gap-1 transition-colors">
+        ← Back to Dashboard
+      </Link>
+
       {/* Header */}
       <div className="gradient-card rounded-2xl border border-border-subtle p-6 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -112,6 +117,10 @@ export default async function ClinicalSummary({ params }) {
         <Link href={`/case/${patient._id}/emergency`}
           className="border border-neon-red/40 text-neon-red font-medium py-2.5 px-5 rounded-xl text-sm hover:bg-neon-red/10 transition-all">
           Check Emergency Level
+        </Link>
+        <Link href="/dashboard"
+          className="border border-border-subtle text-text-muted font-medium py-2.5 px-5 rounded-xl text-sm hover:text-text-secondary hover:border-text-muted/50 transition-all">
+          Back to Dashboard
         </Link>
       </div>
     </div>

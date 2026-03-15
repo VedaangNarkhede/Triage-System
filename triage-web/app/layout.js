@@ -1,24 +1,38 @@
 import "./globals.css";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import Link from 'next/link';
 
 export const metadata = {
-  title: "TRIAGE.AI — Clinical Decision Support",
-  description: "AI-powered intelligent triage and clinical decision support system",
+  title: "AI Triage System",
+  description: "Intelligent Triage & Decision Support System",
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className="dark">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
-      </head>
+    <html lang="en">
       <body className="antialiased min-h-screen flex flex-col">
-        <Navbar />
-        <main className="flex-1">{children}</main>
-        <Footer />
+        {/* Navigation Bar */}
+        <header className="bg-brand-primary text-white shadow-md">
+          <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+            <div className="text-2xl font-bold tracking-wider">ORTHOC</div>
+            <nav className="space-x-8 text-sm font-medium uppercase tracking-wide">
+              <Link href="/" className="hover:text-brand-accent transition-colors">Home</Link>
+              <Link href="/patient/new" className="hover:text-brand-accent transition-colors">New Patient</Link>
+              <Link href="/doctor/dashboard" className="hover:text-brand-accent transition-colors">Dashboard</Link>
+            </nav>
+          </div>
+        </header>
+
+        {/* Main Content Area */}
+        <main className="flex-1">
+          {children}
+        </main>
+
+        {/* Footer */}
+        <footer className="bg-brand-dark text-white py-8">
+          <div className="container mx-auto px-6 text-center text-sm text-gray-300">
+            &copy; {new Date().getFullYear()} AI-Powered Intelligent Triage & Decision Support System.
+          </div>
+        </footer>
       </body>
     </html>
   );
