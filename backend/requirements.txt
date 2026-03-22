@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+python-multipart
+pydantic
+requests
+huggingface-hub
+faster-whisper
+loguru
+torch
+Pillow
+transformers
+qwen-vl-utils
+langgraph
+chromadb
+sentence-transformers
