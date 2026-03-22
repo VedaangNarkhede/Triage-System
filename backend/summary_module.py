@@ -6,6 +6,7 @@ Focus: Extraction and organization, NOT diagnosis.
 """
 
 import json
+import os
 import sys
 import requests
 
@@ -14,7 +15,7 @@ from huggingface_hub import InferenceClient
 
 # Hugging Face Inference API
 HF_MODEL = "Qwen/Qwen2.5-32B-Instruct"
-HF_TOKEN = "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"
+HF_TOKEN = os.getenv("HF_TOKEN")
 
 # Initialize Client
 hf_client = InferenceClient(api_key=HF_TOKEN)

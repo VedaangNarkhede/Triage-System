@@ -13,3 +13,4 @@ qwen-vl-utils
 langgraph
 chromadb
 sentence-transformers
+python-dotenv

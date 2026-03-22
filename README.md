@@ -60,8 +60,14 @@ The backend relies on Python. We recommend using a virtual environment (`venv` o
 
 ```bash
 # Ensure you are at the project root
+cd /path/to/LMNIIT
+
 # Install dependencies
 pip install -r backend/requirements.txt
+
+# Environment Setup
+# Before running the server, copy or create a `.env` file in the project root:
+# echo "HF_TOKEN=your_token_here" > .env
 
 # Start the Backend Server (Ensure you run this from the project root!)
 uvicorn backend.api:app --host 0.0.0.0 --port 8000 --reload

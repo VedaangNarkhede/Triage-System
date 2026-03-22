@@ -26,7 +26,7 @@ CHROMA_COLLECTION_NAME = "disease_knowledge_r1"
 TOP_K = int(os.getenv("RAG_TOP_K", "3"))
 
 # ─── LLM (Qwen via HuggingFace) ────────────────────────────────────────────────
-HF_TOKEN = os.getenv("HF_TOKEN", "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")
+HF_TOKEN = os.getenv("HF_TOKEN")
 HF_MODEL_ID = "Qwen/Qwen2.5-32B-Instruct"  # Switched from DeepSeek R1 to Qwen
 LLM_MAX_TOKENS = int(os.getenv("RAG_LLM_MAX_TOKENS", "2048"))
 LLM_TEMPERATURE = float(os.getenv("RAG_LLM_TEMPERATURE", "0.3"))

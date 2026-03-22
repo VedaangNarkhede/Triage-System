@@ -1,18 +1,3 @@
-"""
-AI Clinical Note Generator — Unified OCR + RAG2 Runner (DeepSeek R1)
-
-Converts unstructured clinical input (text, audio, image, or PDF) into
-structured clinical notes, then runs RAG2-based differential diagnosis
-using DeepSeek R1 via HuggingFace.
-
-Usage:
-    python ocr_r1.py "patient description text"       # text input
-    python ocr_r1.py path/to/audio.wav                # audio input
-    python ocr_r1.py path/to/image.jpg                # image input
-    python ocr_r1.py path/to/document.pdf             # PDF input
-    python ocr_r1.py --no-rag "text"                  # skip RAG stage
-"""
-
 import json
 import sys
 import os
