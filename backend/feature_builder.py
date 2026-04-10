@@ -22,7 +22,6 @@ def build_features(ner_result: dict, temporal_result: dict) -> dict:
     Args:
         ner_result: dict with keys "symptoms", "severity", "body_parts"
         temporal_result: dict with keys "duration", "onset"
-
     Returns:
         dict with combined features:
             - "symptoms": list of symptoms
